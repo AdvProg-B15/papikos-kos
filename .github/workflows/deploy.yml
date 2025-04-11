@@ -19,4 +19,4 @@ jobs:
             cd papikos-kos
             git pull origin main
             docker compose down
-            docker compose up -d --build
+            docker compose -f compose-staging.yaml up -d --build
