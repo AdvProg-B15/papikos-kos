@@ -287,21 +287,18 @@ class KosControllerTest {
         int updatedRooms = 6;
         Map<String, Object> updatePayload = Map.of("name", updatedName, "numRooms", updatedRooms);
 
-        Kos expectedResultKos = new Kos(); // Create the expected state after update
-        // Copy necessary fields...
+        Kos expectedResultKos = new Kos();
         expectedResultKos.setId(kosId);
         expectedResultKos.setOwnerUserId(ownerUserId);
         expectedResultKos.setName(updatedName);
         expectedResultKos.setNumRooms(updatedRooms);
-        expectedResultKos.setAddress(kos.getAddress()); // Assume address not updated
-        //... set other fields as expected after update
+        expectedResultKos.setAddress(kos.getAddress());
 
-        // Mock service updateKos
         when(kosService.updateKos(eq(kosId), any(Kos.class), eq(ownerUserId))).thenReturn(expectedResultKos);
 
         mockMvc.perform(patch("/api/v1/kos/{id}", kosId)
                         .with(csrf())
-                        .with(authentication(ownerAuth)) // Provide owner's auth
+                        .with(authentication(ownerAuth))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPatchRequest.write(updatePayload).getJson()))
                 .andExpect(status().isOk())
@@ -414,19 +411,18 @@ class KosControllerTest {
         verify(kosService, never()).deleteKos(any(UUID.class), any(UUID.class));
     }
 
-    // Test DELETE unauthorized (assuming @ControllerAdvice handles UnauthorizedAccessException)
+    // Test DELETE unauthorized
     @Test
     void deleteKos_OwnerDeletesOthersKos_Forbidden_Returns403() throws Exception {
         Authentication attackerAuth = createAuth(anotherUserId, "PEMILIK");
         String expectedErrorMessage = "User " + anotherUserId + " is not authorized to delete Kos " + kosId;
 
-        // Mock service deleteKos to throw exception
         doThrow(new UnauthorizedAccessException(expectedErrorMessage))
                 .when(kosService).deleteKos(eq(kosId), eq(anotherUserId));
 
-        mockMvc.perform(delete("/api/v1/kos/{id}", kosId) // Target the original kos
+        mockMvc.perform(delete("/api/v1/kos/{id}", kosId)
                         .with(csrf())
-                        .with(authentication(attackerAuth))) // Use attacker's auth
+                        .with(authentication(attackerAuth)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
                 .andExpect(jsonPath("$.message").value(expectedErrorMessage));
