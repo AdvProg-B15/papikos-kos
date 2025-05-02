@@ -340,8 +340,6 @@ class KosServiceTest {
         List<Kos> expectedResults = List.of(kos); // Assuming 'kos' matches 'Test'
 
         // Arrange: Mock repository search method
-        // Adjust the method name and arguments based on your repository implementation
-        // Example: using SpecificationExecutor or a custom query method
         when(kosRepository.findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, keyword))
                 .thenReturn(expectedResults);
 
