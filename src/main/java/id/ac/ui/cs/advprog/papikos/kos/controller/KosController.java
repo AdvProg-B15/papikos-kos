@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -18,7 +19,7 @@ public class KosController {
     }
 
     public ResponseEntity<ApiResponse<List<Kos>>> getAllKos() {
-        List<Kos> kos = kosService.findAllKos();
+        List<Kos> kos = new ArrayList<>(); // TODO: Change with real implementation
 
         // Apply builder
         ApiResponse<List<Kos>> res = ApiResponse.<List<Kos>>builder()

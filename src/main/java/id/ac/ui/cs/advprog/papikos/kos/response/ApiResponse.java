@@ -33,7 +33,8 @@ public class ApiResponse<T> {
         private T data;
 
         // Private constructor for the builder
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder<T> status(HttpStatus status) {
             this.status = status;

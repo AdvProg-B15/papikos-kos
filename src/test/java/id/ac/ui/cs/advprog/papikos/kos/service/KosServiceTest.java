@@ -1,12 +1,9 @@
 package id.ac.ui.cs.advprog.papikos.kos.service;
 
 import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
-import id.ac.ui.cs.advprog.papikos.kos.model.Pemilik; // Assuming Pemilik is the Owner model
 import id.ac.ui.cs.advprog.papikos.kos.repository.KosRepository;
-import id.ac.ui.cs.advprog.papikos.kos.repository.PemilikRepository;
-import id.ac.ui.cs.advprog.papikos.kos.exception.KosNotFoundException; // Assuming this exception exists
-import id.ac.ui.cs.advprog.papikos.kos.exception.UnauthorizedAccessException; // Assuming this exception exists
-import jakarta.validation.ValidationException; // Assuming standard validation
+import id.ac.ui.cs.advprog.papikos.kos.exception.KosNotFoundException;
+import id.ac.ui.cs.advprog.papikos.kos.exception.UnauthorizedAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,13 +11,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -30,186 +29,218 @@ class KosServiceTest {
     @Mock
     private KosRepository kosRepository;
 
-    @Mock
-    private PemilikRepository pemilikRepository; // Assuming PemilikRepository handles Owner data
-
     @InjectMocks
-    private KosService kosService;
+    private KosServiceImpl kosService; // Assuming your implementation class is KosServiceImpl
 
-    private Pemilik owner;
     private Kos kos;
-    private String kosId = "kos-123";
-    private String ownerId = "owner-456";
-    private Pemilik anotherOwner;
-    private String anotherOwnerId = "owner-789";
+    private UUID kosId;
+    private UUID ownerUserId;
+    private UUID anotherUserId;
 
     @BeforeEach
     void setUp() {
-        // Initialize common test objects
-        owner = new Pemilik(); // Create a Pemilik instance
-        owner.setId(ownerId);
-        owner.setApproved(true); // Assuming Pemilik has an approval status & setter
+        kosId = UUID.randomUUID();
+        ownerUserId = UUID.randomUUID();
+        anotherUserId = UUID.randomUUID(); // For unauthorized tests
 
         kos = new Kos();
         kos.setId(kosId);
-        kos.setPemilik(owner); // Assuming Kos has a reference to Pemilik
-        kos.setNama("Kos Test");
-        // Set other necessary Kos properties
-
-        // Second owner for unauthorized tests
-        anotherOwner = new Pemilik();
-        anotherOwner.setId(anotherOwnerId);
-        anotherOwner.setApproved(true);
+        kos.setOwnerUserId(ownerUserId);
+        kos.setName("Kos Test ABC");
+        kos.setAddress("Jl. Test No. 123");
+        kos.setDescription("Kos nyaman dekat kampus");
+        kos.setNumRooms(10);
+        kos.setMonthlyRentPrice(new BigDecimal("1500000.00"));
+        kos.setIsListed(true);
+        kos.setCreatedAt(LocalDateTime.now().minusDays(1));
+        kos.setUpdatedAt(LocalDateTime.now().minusHours(1));
     }
 
+    // --- CREATE ---
     @Test
-    void addKos_Success() {
-        // Arrange: Mock owner repository to return the approved owner
-        when(pemilikRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-        // Arrange: Mock kos repository save to return the saved kos
-        when(kosRepository.save(any(Kos.class))).thenReturn(kos);
+    void createKos_Success() {
+        Kos newKos = new Kos();
+        newKos.setOwnerUserId(ownerUserId);
+        newKos.setName("Kos Baru Mantap");
+        newKos.setAddress("Jl. Baru No. 1");
+        newKos.setDescription("Deskripsi Kos Baru");
+        newKos.setNumRooms(5);
+        newKos.setMonthlyRentPrice(new BigDecimal("2000000.00"));
 
-        // Act: Call the service method
-        Kos savedKos = kosService.addKos(kos, ownerId); // Assuming this method exists
-
-        // Assert: Check if the kos was saved and returned correctly
-        assertNotNull(savedKos);
-        assertEquals(kos.getId(), savedKos.getId());
-        assertEquals(owner, savedKos.getPemilik()); // Check if owner is set correctly
-        verify(pemilikRepository, times(1)).findById(ownerId); // Verify owner check
-        verify(kosRepository, times(1)).save(kos); // Verify save was called
-    }
-
-    @Test
-    void addKos_FailsIfUserIsNotApprovedOwner() {
-        // Arrange: Set owner to not approved
-        owner.setApproved(false);
-        // Arrange: Mock owner repository to return the unapproved owner
-        when(pemilikRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-
-        // Act & Assert: Check for UnauthorizedAccessException (or similar)
-        assertThrows(UnauthorizedAccessException.class, () -> { // Assuming this exception
-            kosService.addKos(kos, ownerId);
+        // When save is called, return the kos with ID and timestamps assigned (simulate JPA)
+        when(kosRepository.save(any(Kos.class))).thenAnswer(invocation -> {
+            Kos savedKos = invocation.getArgument(0);
+            savedKos.setId(UUID.randomUUID()); // Simulate ID generation
+            savedKos.setCreatedAt(LocalDateTime.now()); // Simulate @PrePersist
+            savedKos.setUpdatedAt(LocalDateTime.now()); // Simulate @PrePersist
+            return savedKos;
         });
 
-        // Verify owner check was done, but save was not called
-        verify(pemilikRepository, times(1)).findById(ownerId);
-        verify(kosRepository, never()).save(any(Kos.class));
+        // Act: Call the service method to create Kos
+        Kos createdKos = kosService.createKos(newKos, ownerUserId); // Assuming service sets ownerUserId
+
+        // Assert: Check the returned Kos object
+        assertNotNull(createdKos);
+        assertNotNull(createdKos.getId());
+        assertEquals(ownerUserId, createdKos.getOwnerUserId());
+        assertEquals("Kos Baru Mantap", createdKos.getName());
+        assertEquals("Jl. Baru No. 1", createdKos.getAddress());
+        assertEquals(5, createdKos.getNumRooms());
+        assertEquals(0, new BigDecimal("2000000.00").compareTo(createdKos.getMonthlyRentPrice()));
+        assertTrue(createdKos.getIsListed());
+        assertNotNull(createdKos.getCreatedAt());
+        assertNotNull(createdKos.getUpdatedAt());
+
+        // Assert: Verify repository save was called exactly once
+        verify(kosRepository, times(1)).save(any(Kos.class));
     }
 
     @Test
-    void addKos_InvalidInput() {
-        // Arrange: Create an invalid Kos object (e.g., null name)
+    void createKos_ThrowsException_WhenNameIsNull() {
+        // Arrange: Create Kos with invalid data (null name)
         Kos invalidKos = new Kos();
-        invalidKos.setPemilik(owner); // Set owner, assuming validation happens after owner check
-        // invalidKos.setNama(null); // Example of invalid data
+        invalidKos.setOwnerUserId(ownerUserId);
+        invalidKos.setName(null); // Invalid state
+        invalidKos.setAddress("Jl. Invalid");
+        invalidKos.setNumRooms(1);
+        invalidKos.setMonthlyRentPrice(BigDecimal.ONE);
 
-        // Arrange: Mock owner repository to return the approved owner (owner check passes)
-        when(pemilikRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-        // Arrange: Mock the service method call for invalid input to throw ValidationException
-        // This often requires mocking the validation mechanism itself or assuming the service method throws it directly
-        // For simplicity here, we'll assume the service method throws it if input is invalid
-        // A more robust test might involve mocking a Validator instance if used explicitly
-        // Let's assume addKos internally validates and throws:
-        doThrow(new ValidationException("Invalid Kos data")).when(kosService).validateKosInput(invalidKos); // Hypothetical validation method
-        // OR If addKos does validation directly:
-        // We expect addKos itself to throw the exception
+        // Act & Assert: Expect an exception (e.g., IllegalArgumentException or ConstraintViolationException if using validation)
+        // For this example, let's assume the service throws IllegalArgumentException for basic checks
+        assertThrows(IllegalArgumentException.class, () -> {
+            kosService.createKos(invalidKos, ownerUserId);
+        }, "Kos name cannot be null or empty"); // Adjust expected exception and message based on actual service implementation
 
-        // Act & Assert: Check for ValidationException
-        assertThrows(ValidationException.class, () -> {
-            kosService.addKos(invalidKos, ownerId); // Call the actual method
-        });
-
-        // Verify owner check was done, but save was not called
-        verify(pemilikRepository, times(1)).findById(ownerId);
+        // Assert: Verify repository save was *not* called
         verify(kosRepository, never()).save(any(Kos.class));
     }
 
+
+    // --- READ ---
     @Test
-    void getKosById_Success() {
+    void findKosById_Success() {
         // Arrange: Mock the repository to return the kos object when findById is called
         when(kosRepository.findById(kosId)).thenReturn(Optional.of(kos));
 
         // Act: Call the service method
-        Kos foundKos = kosService.getKosById(kosId); // Assuming this method exists
+        Kos foundKos = kosService.findKosById(kosId);
 
         // Assert: Check if the correct kos object is returned
         assertNotNull(foundKos);
         assertEquals(kosId, foundKos.getId());
-        assertEquals(kos.getNama(), foundKos.getNama());
-        assertEquals(owner, foundKos.getPemilik());
+        assertEquals(kos.getName(), foundKos.getName());
+        assertEquals(ownerUserId, foundKos.getOwnerUserId());
         verify(kosRepository, times(1)).findById(kosId); // Verify findById was called once
     }
 
     @Test
-    void getKosById_NotFound() {
+    void findKosById_NotFound() {
         // Arrange: Mock the repository to return an empty Optional
-        when(kosRepository.findById(anyString())).thenReturn(Optional.empty());
-        String nonExistentId = "non-existent-id";
+        UUID nonExistentId = UUID.randomUUID();
+        when(kosRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // Act & Assert: Check if the correct exception is thrown when the ID doesn't exist
-        Exception exception = assertThrows(KosNotFoundException.class, () -> { // Assuming KosNotFoundException
-            kosService.getKosById(nonExistentId);
+        // Act & Assert: Check if KosNotFoundException is thrown
+        Exception exception = assertThrows(KosNotFoundException.class, () -> {
+            kosService.findKosById(nonExistentId);
         });
 
         // Optionally check the exception message
-        // String expectedMessage = "Kos with ID " + nonExistentId + " not found";
-        // String actualMessage = exception.getMessage();
-        // assertTrue(actualMessage.contains(expectedMessage));
+        String expectedMessage = "Kos with ID " + nonExistentId + " not found";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedMessage));
 
         verify(kosRepository, times(1)).findById(nonExistentId); // Verify findById was called
     }
 
     @Test
-    void getKosByOwner_Success() {
+    void findKosByOwnerUserId_Success() {
         // Arrange: Mock repository to return a list containing the kos
         List<Kos> expectedKosList = List.of(kos);
-        when(kosRepository.findByPemilikId(ownerId)).thenReturn(expectedKosList); // Assuming this repository method exists
+        // Assuming repository method is findByOwnerUserId
+        when(kosRepository.findByOwnerUserId(ownerUserId)).thenReturn(expectedKosList);
 
         // Act: Call the service method
-        List<Kos> actualKosList = kosService.getKosByOwner(ownerId); // Assuming this service method exists
+        List<Kos> actualKosList = kosService.findKosByOwnerUserId(ownerUserId);
 
         // Assert: Check if the correct list is returned
         assertNotNull(actualKosList);
         assertEquals(1, actualKosList.size());
         assertEquals(kos, actualKosList.get(0));
-        verify(kosRepository, times(1)).findByPemilikId(ownerId);
+        verify(kosRepository, times(1)).findByOwnerUserId(ownerUserId);
     }
 
     @Test
-    void getKosByOwner_NotFound() {
-        // Arrange: Mock repository to return an empty list
-        when(kosRepository.findByPemilikId(ownerId)).thenReturn(Collections.emptyList());
+    void findKosByOwnerUserId_NoKosFound() {
+        // Arrange: Mock repository to return an empty list for a different owner
+        UUID userWithNoKos = UUID.randomUUID();
+        when(kosRepository.findByOwnerUserId(userWithNoKos)).thenReturn(Collections.emptyList());
 
         // Act: Call the service method
-        List<Kos> actualKosList = kosService.getKosByOwner(ownerId);
+        List<Kos> actualKosList = kosService.findKosByOwnerUserId(userWithNoKos);
 
         // Assert: Check if an empty list is returned
         assertNotNull(actualKosList);
         assertTrue(actualKosList.isEmpty());
-        verify(kosRepository, times(1)).findByPemilikId(ownerId);
+        verify(kosRepository, times(1)).findByOwnerUserId(userWithNoKos);
     }
 
+    @Test
+    void findAllKos_Success() {
+        // Arrange: Prepare another Kos object for the list
+        Kos anotherKos = new Kos();
+        anotherKos.setId(UUID.randomUUID());
+        anotherKos.setOwnerUserId(anotherUserId);
+        anotherKos.setName("Kos Lain");
+        // ... set other properties ...
+
+        List<Kos> expectedKosList = List.of(kos, anotherKos);
+        when(kosRepository.findAll()).thenReturn(expectedKosList);
+
+        // Act
+        List<Kos> actualKosList = kosService.findAllKos();
+
+        // Assert
+        assertNotNull(actualKosList);
+        assertEquals(2, actualKosList.size());
+        assertTrue(actualKosList.contains(kos));
+        assertTrue(actualKosList.contains(anotherKos));
+        verify(kosRepository, times(1)).findAll();
+    }
+
+
+    // --- UPDATE ---
     @Test
     void updateKos_Success() {
         // Arrange: Prepare updated data
         Kos updatedKosData = new Kos();
-        updatedKosData.setNama("Updated Kos Name");
-        // Set other fields to update...
+        updatedKosData.setName("Updated Kos Name");
+        updatedKosData.setAddress("Updated Address");
+        updatedKosData.setDescription("Updated Description");
+        updatedKosData.setNumRooms(12);
+        updatedKosData.setMonthlyRentPrice(new BigDecimal("1600000.00"));
+        updatedKosData.setIsListed(false);
 
         // Arrange: Mock finding the existing kos
         when(kosRepository.findById(kosId)).thenReturn(Optional.of(kos));
-        // Arrange: Mock saving the updated kos - return value might be the saved entity
+        // Arrange: Mock saving the updated kos - return the updated entity
         when(kosRepository.save(any(Kos.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act: Call the service method with the correct owner ID
-        Kos resultKos = kosService.updateKos(kosId, updatedKosData, ownerId); // Assuming this method exists
+        Kos resultKos = kosService.updateKos(kosId, updatedKosData, ownerUserId);
 
         // Assert: Verify the result and interactions
         assertNotNull(resultKos);
         assertEquals(kosId, resultKos.getId()); // ID should remain the same
-        assertEquals("Updated Kos Name", resultKos.getNama()); // Check updated field
-        assertEquals(owner, resultKos.getPemilik()); // Owner should remain the same
+        assertEquals(ownerUserId, resultKos.getOwnerUserId()); // Owner should remain the same
+        assertEquals("Updated Kos Name", resultKos.getName()); // Check updated field
+        assertEquals("Updated Address", resultKos.getAddress());
+        assertEquals("Updated Description", resultKos.getDescription());
+        assertEquals(12, resultKos.getNumRooms());
+        assertEquals(0, new BigDecimal("1600000.00").compareTo(resultKos.getMonthlyRentPrice()));
+        assertFalse(resultKos.getIsListed()); // Check updated field
+        assertNotNull(resultKos.getUpdatedAt()); // Timestamp should be updated
+        // Ensure createdAt is not changed (or check if it's expected to be null after update)
+        assertNotNull(resultKos.getCreatedAt());
 
         verify(kosRepository, times(1)).findById(kosId); // Verify find was called
         verify(kosRepository, times(1)).save(any(Kos.class)); // Verify save was called
@@ -219,15 +250,15 @@ class KosServiceTest {
     void updateKos_NotFound() {
         // Arrange: Prepare updated data
         Kos updatedKosData = new Kos();
-        updatedKosData.setNama("Updated Kos Name");
-        String nonExistentId = "non-existent-id";
+        updatedKosData.setName("Updated Kos Name");
+        UUID nonExistentId = UUID.randomUUID();
 
         // Arrange: Mock finding non-existent kos
         when(kosRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
         // Act & Assert: Check for KosNotFoundException
         assertThrows(KosNotFoundException.class, () -> {
-            kosService.updateKos(nonExistentId, updatedKosData, ownerId);
+            kosService.updateKos(nonExistentId, updatedKosData, ownerUserId);
         });
 
         // Verify find was called, but save was not
@@ -239,14 +270,15 @@ class KosServiceTest {
     void updateKos_Unauthorized() {
         // Arrange: Prepare updated data
         Kos updatedKosData = new Kos();
-        updatedKosData.setNama("Updated Kos Name");
+        updatedKosData.setName("Updated Kos Name");
 
-        // Arrange: Mock finding the existing kos (owned by 'owner')
+        // Arrange: Mock finding the existing kos (owned by 'ownerUserId')
         when(kosRepository.findById(kosId)).thenReturn(Optional.of(kos));
 
-        // Act & Assert: Call the service method with the *wrong* owner ID and check for exception
+        // Act & Assert: Call the service method with the *wrong* user ID and check for exception
         assertThrows(UnauthorizedAccessException.class, () -> {
-            kosService.updateKos(kosId, updatedKosData, anotherOwnerId); // Using different owner ID
+            // Attempting update with anotherUserId, but kos is owned by ownerUserId
+            kosService.updateKos(kosId, updatedKosData, anotherUserId);
         });
 
         // Verify find was called, but save was not
@@ -254,6 +286,8 @@ class KosServiceTest {
         verify(kosRepository, never()).save(any(Kos.class));
     }
 
+
+    // --- DELETE ---
     @Test
     void deleteKos_Success() {
         // Arrange: Mock finding the existing kos
@@ -262,7 +296,7 @@ class KosServiceTest {
         doNothing().when(kosRepository).deleteById(kosId); // Assuming deleteById is used
 
         // Act: Call the service method with the correct owner ID
-        kosService.deleteKos(kosId, ownerId); // Assuming this method exists
+        kosService.deleteKos(kosId, ownerUserId);
 
         // Assert: Verify find and delete were called
         verify(kosRepository, times(1)).findById(kosId);
@@ -272,43 +306,47 @@ class KosServiceTest {
     @Test
     void deleteKos_NotFound() {
         // Arrange: Mock finding non-existent kos
-        String nonExistentId = "non-existent-id";
+        UUID nonExistentId = UUID.randomUUID();
         when(kosRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
         // Act & Assert: Check for KosNotFoundException
         assertThrows(KosNotFoundException.class, () -> {
-            kosService.deleteKos(nonExistentId, ownerId);
+            kosService.deleteKos(nonExistentId, ownerUserId);
         });
 
         // Verify find was called, but delete was not
         verify(kosRepository, times(1)).findById(nonExistentId);
-        verify(kosRepository, never()).deleteById(anyString());
-        verify(kosRepository, never()).delete(any(Kos.class)); // Check other potential delete methods too
+        verify(kosRepository, never()).deleteById(any(UUID.class));
     }
 
     @Test
     void deleteKos_Unauthorized() {
-        // Arrange: Mock finding the existing kos (owned by 'owner')
+        // Arrange: Mock finding the existing kos (owned by 'ownerUserId')
         when(kosRepository.findById(kosId)).thenReturn(Optional.of(kos));
 
-        // Act & Assert: Call the service method with the *wrong* owner ID and check for exception
+        // Act & Assert: Call the service method with the *wrong* user ID and check for exception
         assertThrows(UnauthorizedAccessException.class, () -> {
-            kosService.deleteKos(kosId, anotherOwnerId); // Using different owner ID
+            // Attempting delete with anotherUserId, but kos is owned by ownerUserId
+            kosService.deleteKos(kosId, anotherUserId);
         });
 
         // Verify find was called, but delete was not
         verify(kosRepository, times(1)).findById(kosId);
-        verify(kosRepository, never()).deleteById(anyString());
-        verify(kosRepository, never()).delete(any(Kos.class));
+        verify(kosRepository, never()).deleteById(any(UUID.class));
     }
 
+    // --- SEARCH (Optional, based on old test) ---
     @Test
     void searchKos_Success() {
         // Arrange: Prepare search keyword and expected results
         String keyword = "Test";
-        List<Kos> expectedResults = List.of(kos);
+        List<Kos> expectedResults = List.of(kos); // Assuming 'kos' matches 'Test'
+
         // Arrange: Mock repository search method
-        when(kosRepository.searchByKeyword(keyword)).thenReturn(expectedResults); // Assuming this repo method exists
+        // Adjust the method name and arguments based on your repository implementation
+        // Example: using SpecificationExecutor or a custom query method
+        when(kosRepository.findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, keyword))
+                .thenReturn(expectedResults);
 
         // Act: Call the service search method
         List<Kos> actualResults = kosService.searchKos(keyword); // Assuming this service method exists
@@ -317,15 +355,16 @@ class KosServiceTest {
         assertNotNull(actualResults);
         assertEquals(expectedResults.size(), actualResults.size());
         assertEquals(expectedResults.get(0), actualResults.get(0));
-        verify(kosRepository, times(1)).searchByKeyword(keyword);
+        verify(kosRepository, times(1)).findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, keyword);
     }
 
     @Test
     void searchKos_NoResults() {
         // Arrange: Prepare search keyword
-        String keyword = "NotFound";
+        String keyword = "NotFoundKeyword";
         // Arrange: Mock repository search method to return empty list
-        when(kosRepository.searchByKeyword(keyword)).thenReturn(Collections.emptyList());
+        when(kosRepository.findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, keyword))
+                .thenReturn(Collections.emptyList());
 
         // Act: Call the service search method
         List<Kos> actualResults = kosService.searchKos(keyword);
@@ -333,65 +372,6 @@ class KosServiceTest {
         // Assert: Verify the list is empty
         assertNotNull(actualResults);
         assertTrue(actualResults.isEmpty());
-        verify(kosRepository, times(1)).searchByKeyword(keyword);
+        verify(kosRepository, times(1)).findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, keyword);
     }
-
-    // Assuming getBasicKosInfoInternal is a method in KosService
-    @Test
-    void getBasicKosInfoInternal_Success() {
-        // Arrange: Mock repository findById to return the kos object
-        when(kosRepository.findById(kosId)).thenReturn(Optional.of(kos));
-
-        // Act: Call the internal service method
-        Kos resultKos = kosService.getBasicKosInfoInternal(kosId); // Assuming this method exists
-
-        // Assert: Verify the correct object is returned (or basic checks)
-        assertNotNull(resultKos);
-        assertEquals(kosId, resultKos.getId());
-        // Add more assertions if specific basic info is expected
-        verify(kosRepository, times(1)).findById(kosId);
-    }
-
-    @Test
-    void getBasicKosInfoInternal_NotFound() {
-        // Arrange: Mock repository findById to return empty
-        String nonExistentId = "non-existent-id";
-        when(kosRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-
-        // Act & Assert: Check for KosNotFoundException
-        assertThrows(KosNotFoundException.class, () -> {
-            kosService.getBasicKosInfoInternal(nonExistentId);
-        });
-
-        // Verify findById was called
-        verify(kosRepository, times(1)).findById(nonExistentId);
-    }
-
-     // --- Example: Basic findAllKos test based on current KosService ---
-     @Test
-     void findAllKos_ReturnsKosList() {
-         List<Kos> expectedKosList = new ArrayList<>();
-         expectedKosList.add(kos);
-         when(kosRepository.findAll()).thenReturn(expectedKosList);
-
-         List<Kos> actualKosList = kosService.findAllKos();
-
-         assertEquals(expectedKosList.size(), actualKosList.size());
-         assertEquals(expectedKosList.get(0), actualKosList.get(0));
-         verify(kosRepository, times(1)).findAll();
-     }
-
-     // --- Example: Basic findAllPemilik test based on current KosService ---
-     @Test
-     void findAllPemilik_ReturnsPemilikList() {
-         List<Pemilik> expectedPemilikList = new ArrayList<>();
-         expectedPemilikList.add(owner);
-         when(pemilikRepository.findAll()).thenReturn(expectedPemilikList);
-
-         List<Pemilik> actualPemilikList = kosService.findAllPemilik();
-
-         assertEquals(expectedPemilikList.size(), actualPemilikList.size());
-         assertEquals(expectedPemilikList.get(0), actualPemilikList.get(0));
-         verify(pemilikRepository, times(1)).findAll();
-     }
 }

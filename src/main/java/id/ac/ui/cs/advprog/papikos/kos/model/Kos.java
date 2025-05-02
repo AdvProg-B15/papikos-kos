@@ -1,17 +1,19 @@
 package id.ac.ui.cs.advprog.papikos.kos.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity(name = "Kos")
-@Table(name = "kos", schema = "papikos")
+@Table(name = "kos", schema = "papikos",
+        indexes = {
+                @Index(name = "idx_owner_user_id", columnList = "owner_user_id"),
+                @Index(name = "idx_is_listed", columnList = "is_listed")
+        })
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -19,29 +21,65 @@ import java.util.Objects;
 @ToString
 public class Kos {
     @Id
-    @Column(nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
-    @Column(name = "name")
+    @Column(name = "owner_user_id", nullable = false)
+    private UUID ownerUserId;
+
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "price")
-    private Double price;
-
-    @Column(name = "address")
+    @Column(name = "address", nullable = false, columnDefinition = "TEXT")
     private String address;
 
-    @Column(name = "total_rooms")
-    private Integer totalRooms;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "num_rooms", nullable = false)
+    private Integer numRooms;
+
+    @Column(name = "monthly_rent_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal monthlyRentPrice;
+
+    @Column(name = "is_listed", nullable = false)
+    private Boolean isListed = true;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Kos kos = (Kos) o;
-        return Objects.equals(id, kos.id) && Objects.equals(name, kos.name) && Objects.equals(price, kos.price) &&
-            Objects.equals(address, kos.address) && Objects.equals(totalRooms, kos.totalRooms);
+        return Objects.equals(id, kos.id) &&
+                Objects.equals(ownerUserId, kos.ownerUserId) &&
+                Objects.equals(name, kos.name) &&
+                Objects.equals(address, kos.address) &&
+                Objects.equals(description, kos.description) &&
+                Objects.equals(numRooms, kos.numRooms) &&
+                Objects.equals(monthlyRentPrice, kos.monthlyRentPrice) &&
+                Objects.equals(isListed, kos.isListed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, ownerUserId, name, address, description, numRooms, monthlyRentPrice, isListed);
     }
 }
