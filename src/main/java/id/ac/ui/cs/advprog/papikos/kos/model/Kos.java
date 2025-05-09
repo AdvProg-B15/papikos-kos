@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.papikos.kos.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,11 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity(name = "Kos")
-@Table(name = "kos", schema = "papikos",
-        indexes = {
-                @Index(name = "idx_owner_user_id", columnList = "owner_user_id"),
-                @Index(name = "idx_is_listed", columnList = "is_listed")
-        })
+@Table(name = "kos")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -21,11 +18,12 @@ import java.util.UUID;
 @ToString
 public class Kos {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false)
+    @GeneratedValue
+    @UuidGenerator
+    @Column(columnDefinition = "uuid", name = "id", nullable = false)
     private UUID id;
 
-    @Column(name = "owner_user_id", nullable = false)
+    @Column(columnDefinition = "uuid", name = "owner_user_id", nullable = false)
     private UUID ownerUserId;
 
     @Column(name = "name", nullable = false, length = 255)

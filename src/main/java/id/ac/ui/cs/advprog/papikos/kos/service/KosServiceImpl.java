@@ -36,14 +36,14 @@ public class KosServiceImpl implements KosService {
     @Override
     @Transactional(readOnly = true)
     public Kos findKosById(UUID kosId) {
-        return kosRepository.findById(kosId.toString())
+        return kosRepository.findById(kosId)
                 .orElseThrow(() -> new KosNotFoundException(kosId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Kos> findKosByOwnerUserId(UUID ownerUserId) {
-        return kosRepository.findByOwnerUserId(ownerUserId.toString());
+        return kosRepository.findKosByOwnerUserId(ownerUserId);
     }
 
     @Override
@@ -91,13 +91,13 @@ public class KosServiceImpl implements KosService {
             throw new UnauthorizedAccessException("User " + requestingUserId + " is not authorized to delete Kos " + kosId);
         }
 
-        kosRepository.deleteById(kosId.toString());
+        kosRepository.deleteById(kosId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Kos> searchKos(String keyword) {
-        return kosRepository.findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+        return kosRepository.findKosByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
                 keyword, keyword, keyword
         );
     }

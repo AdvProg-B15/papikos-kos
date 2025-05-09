@@ -15,12 +15,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update # Or validate, create, create-drop depending on your needs
 
-      # RabbitMQ Configuration
-      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
-      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS}
-
     depends_on: # <-- Add this to ensure dependencies start first
       - postgres
 
@@ -34,8 +28,6 @@ services:
       - "5432:5432"
     networks:
       - papikos-network
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -45,6 +37,3 @@ services:
 networks:
   papikos-network:
     driver: bridge
-
-volumes: # Declare the volumes
-  postgres_data:

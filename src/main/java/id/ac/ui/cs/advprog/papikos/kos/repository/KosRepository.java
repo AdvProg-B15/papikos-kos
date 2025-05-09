@@ -8,10 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface KosRepository extends JpaRepository<Kos, String> {
-    List<Kos> findByOwnerUserId(String ownerUserId);
-
-    List<Kos> findByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-            String nameKeyword, String addressKeyword, String descriptionKeyword
-    );
+public interface KosRepository extends JpaRepository<Kos, UUID> {
+    List<Kos> findKosByOwnerUserId(UUID ownerUserId);
+    List<Kos> findKosByNameContainingIgnoreCaseOrAddressContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String name, String address, String description);
 }
