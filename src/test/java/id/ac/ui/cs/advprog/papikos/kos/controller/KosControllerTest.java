@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,13 +38,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @WebMvcTest(KosController.class)
 class KosControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
     @Mock
     private KosService kosService;
-
-    @InjectMocks
-    private KosController kosController;
 
     // JacksonTester for serializing request bodies if needed
     private JacksonTester<Kos> jsonKosRequest;
@@ -64,8 +63,6 @@ class KosControllerTest {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         JacksonTester.initFields(this, objectMapper);
-
-        mockMvc = MockMvcBuilders.standaloneSetup(kosController).build();
 
         kosId = UUID.randomUUID();
         ownerUserId = UUID.randomUUID();

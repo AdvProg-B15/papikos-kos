@@ -59,7 +59,7 @@ class KosServiceTest {
     @Test
     void createKos_Success() {
         Kos newKos = new Kos();
-        newKos.setOwnerUserId(String.valueOf(ownerUserId));
+        newKos.setOwnerUserId(ownerUserId);
         newKos.setName("Kos Baru Mantap");
         newKos.setAddress("Jl. Baru No. 1");
         newKos.setDescription("Deskripsi Kos Baru");
