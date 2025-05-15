@@ -55,9 +55,6 @@ public class KosServiceImpl implements KosService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        // If your mock service requires an auth token, add it here:
-        // headers.setBearerAuth("your-mock-token");
-        // headers.set("X-API-KEY", "your-mock-api-key");
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
