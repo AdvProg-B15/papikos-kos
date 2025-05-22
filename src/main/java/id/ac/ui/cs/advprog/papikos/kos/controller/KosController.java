@@ -15,10 +15,15 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/kos")
-@RequiredArgsConstructor
 public class KosController {
 
+
     private final KosService kosService;
+
+    // constructor
+    public KosController(KosService kosService) {
+        this.kosService = kosService;
+    }
 
     /**
      * Helper method to extract UUID from Authentication principal name.

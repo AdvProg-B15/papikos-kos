@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.papikos.kos.config;
 
+import id.ac.ui.cs.advprog.papikos.kos.security.TokenAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,24 +10,45 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    private final TokenAuthenticationFilter tokenAuthenticationFilter;
+
+    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter) {
+        this.tokenAuthenticationFilter = tokenAuthenticationFilter;
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        // This RestTemplate bean can be used by TokenAuthenticationFilter
+        // and other services like KosServiceImpl if configured for autowiring.
+        return new RestTemplate();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Essential for token-based auth
+                )
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
+                                // Define public GET endpoints
                                 .requestMatchers(HttpMethod.GET, "/api/v1/kos").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/kos/search").permitAll() // Assuming search is public
+                                .requestMatchers(HttpMethod.GET, "/api/v1/kos/{kosId}").permitAll() // Assuming find by ID is public
+                                // All other requests must be authenticated
                                 .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                // Add your custom token filter before the standard username/password filter
+                .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
