@@ -71,13 +71,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                         VerifyTokenResponse.class
                 );
 
-                logger.info(verifyTokenResponse.toString());
-
                 if (verificationResponse.getStatusCode().is2xxSuccessful()) {
                     logger.info("Token verified successfully for request URI: {}", request.getRequestURI());
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             verifyTokenResponse.data.userId,
-                            null,                // Credentials
+                            "",                // Credentials
                             Collections.singletonList(new SimpleGrantedAuthority(verifyTokenResponse.data.role)) // Authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);

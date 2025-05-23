@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.papikos.kos.controller;
 import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
 import id.ac.ui.cs.advprog.papikos.kos.response.ApiResponse;
 import id.ac.ui.cs.advprog.papikos.kos.service.KosService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1")
 public class KosController {
-
 
     private final KosService kosService;
 
@@ -57,7 +58,7 @@ public class KosController {
 
     // --- CREATE ---
     @PostMapping
-    @PreAuthorize("hasAuthority('PEMILIK')")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<ApiResponse<Kos>> createKos(@RequestBody Kos kos, Authentication authentication) {
         UUID ownerUserId = getUserIdFromAuthentication(authentication);
         Kos createdKos = kosService.createKos(kos, ownerUserId);
@@ -71,19 +72,14 @@ public class KosController {
 
     // --- READ ---
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Kos>>> getAllOrSearchKos(
-            @RequestParam(value = "keyword", required = false) String keyword) {
-
+    public ResponseEntity<ApiResponse<List<Kos>>> getAllOrSearchKos() {
         List<Kos> kosList;
         String message;
 
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            kosList = kosService.searchKos(keyword);
-            message = "Kos search results fetched successfully";
-        } else {
-            kosList = kosService.findAllKos();
-            message = "Kos list fetched successfully";
-        }
+        kosList = kosService.findAllKos();
+        message = "Kos list fetched successfully";
+
+        log.info("Cool");
 
         ApiResponse<List<Kos>> response = ApiResponse.<List<Kos>>builder()
                 .status(HttpStatus.OK)
