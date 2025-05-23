@@ -1,25 +1,18 @@
 package id.ac.ui.cs.advprog.papikos.kos.service;
 
-import id.ac.ui.cs.advprog.papikos.kos.exception.InvalidOwnerException;
 import id.ac.ui.cs.advprog.papikos.kos.exception.KosNotFoundException;
 import id.ac.ui.cs.advprog.papikos.kos.exception.UnauthorizedAccessException;
 import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
 import id.ac.ui.cs.advprog.papikos.kos.repository.KosRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -29,70 +22,15 @@ public class KosServiceImpl implements KosService {
     private static final Logger logger = LoggerFactory.getLogger(KosServiceImpl.class);
 
     private final KosRepository kosRepository;
-    private final RestTemplate restTemplate;
-
-    @Value("${owner.service.url}")
-    private String ownerServiceBaseUrl; // Will be like "http://localhost:8088"
 
     // Constructor injection
     public KosServiceImpl(KosRepository kosRepository, RestTemplate restTemplate) {
         this.kosRepository = kosRepository;
-        this.restTemplate = restTemplate;
-    }
-
-    /**
-     * Checks if the ownerId is valid by making an HTTP POST request to an external owner service.
-     *
-     * @param ownerUserId The UUID of the owner to validate.
-     * @return true if the owner is valid, false otherwise.
-     */
-    private boolean isValidOwner(UUID ownerUserId) {
-        String ownerValidationUrl = ownerServiceBaseUrl + "/api/owner"; // As per requirement: <mock_url>/api/owner
-
-        // Prepare mock request body: e.g., {"id": "uuid-string-of-owner"}
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("id", ownerUserId.toString()); // Using "id" as a common field name for the mock body
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
-
-        try {
-            logger.info("Validating ownerId {} at URL: {}", ownerUserId, ownerValidationUrl);
-            // Expecting a 2xx response for a valid owner.
-            // The actual response body content might not matter, just the status code.
-            ResponseEntity<String> response = restTemplate.postForEntity(ownerValidationUrl, entity, String.class);
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                logger.info("OwnerId {} validation successful. Status: {}", ownerUserId, response.getStatusCode());
-                return true;
-            } else {
-                // This case might not be hit if non-2xx throws an exception, but good for completeness
-                logger.warn("OwnerId {} validation failed. Status: {}, Body: {}", ownerUserId, response.getStatusCode(), response.getBody());
-                return false;
-            }
-        } catch (HttpClientErrorException e) {
-            // Handles 4xx client errors (e.g., 400 Bad Request, 404 Not Found if owner invalid)
-            logger.warn("Client error during ownerId {} validation: {} - {}", ownerUserId, e.getStatusCode(), e.getResponseBodyAsString(), e);
-            return false;
-        } catch (RestClientException e) {
-            // Handles other errors like network issues, 5xx server errors from the mock service
-            logger.error("Error during ownerId {} validation via external service: {}", ownerUserId, e.getMessage(), e);
-            // Depending on policy, you might want to throw a specific exception here
-            // For now, consider it as owner not validated.
-            return false;
-        }
     }
 
     @Override
     @Transactional
     public Kos createKos(Kos kos, UUID ownerUserId) {
-        // Perform ownerId validation
-        if (!isValidOwner(ownerUserId)) {
-            throw new InvalidOwnerException("Owner ID " + ownerUserId + " is not valid or owner service is unavailable.");
-        }
-
         validateKosInput(kos, true);
         kos.setOwnerUserId(ownerUserId);
         logger.info("Creating Kos with name '{}' for ownerId {}", kos.getName(), ownerUserId);
@@ -115,9 +53,6 @@ public class KosServiceImpl implements KosService {
     @Override
     @Transactional(readOnly = true)
     public List<Kos> findKosByOwnerUserId(UUID ownerUserId) {
-        // Optionally, you could also call isValidOwner here if you want to ensure
-        // the owner still exists before fetching their Kos, but it might be overkill
-        // and add unnecessary external calls. The primary check is on creation.
         return kosRepository.findKosByOwnerUserId(ownerUserId);
     }
 
