@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.papikos.kos.config;
 
-
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -17,8 +16,8 @@ public class RabbitMQConfig {
 
     public static final String TOPIC_EXCHANGE_NAME = "rental.topic";
     public static final String ROUTING_KEY_RENTAL_CREATED = "rental.created";
+    public static final String KOS_QUEUE_NAME = "kos.rental.created.queue";
 
-    // --- Common beans for all services ---
     @Bean
     public TopicExchange rentalTopicExchange() {
         return new TopicExchange(TOPIC_EXCHANGE_NAME);
@@ -29,6 +28,7 @@ public class RabbitMQConfig {
         return new Jackson2JsonMessageConverter();
     }
 
+    // Not strictly needed if only consuming, but good practice
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
@@ -36,11 +36,14 @@ public class RabbitMQConfig {
         return rabbitTemplate;
     }
 
-    // --- Beans specific to each consumer service will declare their Queues and Bindings ---
-    // For example, in KosService:
-    // public static final String KOS_QUEUE_NAME = "kos.rental.created.queue";
-    // @Bean Queue kosQueue() { return new Queue(KOS_QUEUE_NAME, false); } // false = durable
-    // @Bean Binding kosBinding(Queue kosQueue, TopicExchange exchange) {
-    //    return BindingBuilder.bind(kosQueue).to(exchange).with(ROUTING_KEY_RENTAL_CREATED);
-    // }
+    @Bean
+    Queue kosQueue() {
+        // durable: true, exclusive: false, autoDelete: false
+        return new Queue(KOS_QUEUE_NAME, true, false, false);
+    }
+
+    @Bean
+    Binding kosBinding(Queue kosQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(kosQueue).to(exchange).with(ROUTING_KEY_RENTAL_CREATED);
+    }
 }
