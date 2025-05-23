@@ -3,7 +3,6 @@ package id.ac.ui.cs.advprog.papikos.kos.controller;
 import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
 import id.ac.ui.cs.advprog.papikos.kos.response.ApiResponse;
 import id.ac.ui.cs.advprog.papikos.kos.service.KosService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/kos")
+@RequestMapping("/api/v1")
 public class KosController {
 
 
@@ -39,6 +38,21 @@ public class KosController {
             System.err.println("Error parsing UUID from principal name: " + authentication.getName());
             throw new IllegalArgumentException("Invalid user identifier format in authentication token.");
         }
+    }
+
+    /**
+     * Healthcheck endpoint.
+     *
+     * @return ResponseEntity with ApiResponse containing "OK" status and message.
+     */
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> healthCheck() {
+        ApiResponse<String> response = ApiResponse.<String>builder()
+                .status(HttpStatus.OK)
+                .message("Service is healthy")
+                .data("OK")
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     // --- CREATE ---

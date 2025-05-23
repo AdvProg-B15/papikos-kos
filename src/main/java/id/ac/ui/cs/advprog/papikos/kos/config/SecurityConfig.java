@@ -25,13 +25,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RestTemplate restTemplate() {
-        // This RestTemplate bean can be used by TokenAuthenticationFilter
-        // and other services like KosServiceImpl if configured for autowiring.
-        return new RestTemplate();
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -41,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 // Define public GET endpoints
-                                .requestMatchers(HttpMethod.GET, "/api/v1/kos").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/kos/search").permitAll() // Assuming search is public
                                 .requestMatchers(HttpMethod.GET, "/api/v1/kos/{kosId}").permitAll() // Assuming find by ID is public
                                 // All other requests must be authenticated

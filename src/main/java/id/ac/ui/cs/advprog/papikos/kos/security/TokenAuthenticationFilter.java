@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.papikos.kos.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.papikos.kos.dto.VerifyTokenResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,11 +31,15 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
 
     private final RestTemplate restTemplate;
-    private final String authVerifyUrl;
 
-    public TokenAuthenticationFilter(RestTemplate restTemplate, @Value("${auth.server.verify.url}") String authVerifyUrl) {
+    @Value("${auth.service.url}")
+    private String authVerifyUrl;
+
+    private final ObjectMapper objectMapper;
+
+    public TokenAuthenticationFilter(RestTemplate restTemplate,  ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
-        this.authVerifyUrl = authVerifyUrl;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -47,27 +53,32 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(token); // Set Bearer token
-            HttpEntity<Void> entity = new HttpEntity<>(headers); // No body
+            headers.setBearerAuth(token);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             try {
-                logger.debug("Verifying token with auth server at URL: {}", authVerifyUrl);
-                // Make POST request to auth server
+                logger.info("Verifying token with auth server at URL: {}", authVerifyUrl);
+
                 ResponseEntity<String> verificationResponse = restTemplate.exchange(
-                        authVerifyUrl,
+                        authVerifyUrl + "/api/v1/verify",
                         HttpMethod.POST,
                         entity,
                         String.class
                 );
 
+                VerifyTokenResponse verifyTokenResponse = objectMapper.readValue(
+                        verificationResponse.getBody(),
+                        VerifyTokenResponse.class
+                );
+
+                logger.info(verifyTokenResponse.toString());
+
                 if (verificationResponse.getStatusCode().is2xxSuccessful()) {
                     logger.info("Token verified successfully for request URI: {}", request.getRequestURI());
-                    // Token is valid, set up Spring Security context
-                    // You might want to parse verificationResponse.getBody() if it contains user details/roles
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            "authenticatedUser", // Principal (e.g., user ID from token or response)
+                            verifyTokenResponse.data.userId,
                             null,                // Credentials
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")) // Authorities
+                            Collections.singletonList(new SimpleGrantedAuthority(verifyTokenResponse.data.role)) // Authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
@@ -81,15 +92,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 logger.warn("Client error during token verification: Status {}, Body {}", e.getStatusCode(), e.getResponseBodyAsString());
                 SecurityContextHolder.clearContext();
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                // It's good practice to not expose too much detail from the auth server's error to the client
                 response.getWriter().write("Authentication Failed: Invalid token or authentication service error.");
-                return; // Stop filter chain
+                return;
             } catch (RestClientException e) {
                 logger.error("Error connecting to authentication service: {}", e.getMessage(), e);
                 SecurityContextHolder.clearContext();
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 response.getWriter().write("Authentication Failed: Could not connect to authentication service.");
-                return; // Stop filter chain
+                return;
             }
         } else {
             logger.debug("No Bearer token found in Authorization header for request URI: {}", request.getRequestURI());
