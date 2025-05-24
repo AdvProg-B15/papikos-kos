@@ -7,10 +7,3 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
     ports:
       - '5432'
-  rabbitmq:
-    image: 'rabbitmq:4.0'
-    environment:
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-    ports:
-      - '5672'
