@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
 import id.ac.ui.cs.advprog.papikos.kos.response.ApiResponse;
 import id.ac.ui.cs.advprog.papikos.kos.service.KosService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +30,7 @@ public class KosController {
      * Helper method to extract UUID from Authentication principal name.
      * Throws IllegalArgumentException if parsing fails.
      */
+
     private UUID getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new IllegalStateException("Authentication principal is required but missing.");
@@ -61,7 +63,12 @@ public class KosController {
     @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<ApiResponse<Kos>> createKos(@RequestBody Kos kos, Authentication authentication) {
         UUID ownerUserId = getUserIdFromAuthentication(authentication);
-        Kos createdKos = kosService.createKos(kos, ownerUserId);
+        Kos createdKos;
+        try {
+            createdKos = kosService.createKos(kos, ownerUserId);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
         ApiResponse<Kos> response = ApiResponse.<Kos>builder()
                 .status(HttpStatus.CREATED)
                 .message("Kos created successfully")
@@ -70,16 +77,13 @@ public class KosController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // --- READ ---
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Kos>>> getAllOrSearchKos() {
+    public ResponseEntity<ApiResponse<List<Kos>>> getAllKos() {
         List<Kos> kosList;
         String message;
 
         kosList = kosService.findAllKos();
         message = "Kos list fetched successfully";
-
-        log.info("Cool");
 
         ApiResponse<List<Kos>> response = ApiResponse.<List<Kos>>builder()
                 .status(HttpStatus.OK)
@@ -90,7 +94,7 @@ public class KosController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasAuthority('PEMILIK')")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<ApiResponse<List<Kos>>> getMyKos(Authentication authentication) {
         UUID ownerUserId = getUserIdFromAuthentication(authentication);
         List<Kos> myKosList = kosService.findKosByOwnerUserId(ownerUserId);
@@ -113,12 +117,11 @@ public class KosController {
         return ResponseEntity.ok(response);
     }
 
-    // --- UPDATE ---
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAuthority('PEMILIK')")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<ApiResponse<Kos>> updateKos(@PathVariable("id") UUID kosId,
                                                       @RequestBody Kos kosUpdateData, // Use full object, service handles partial update
-                                                      Authentication authentication) {
+                                                      Authentication authentication) throws BadRequestException {
         UUID requestingUserId = getUserIdFromAuthentication(authentication);
         Kos updatedKos = kosService.updateKos(kosId, kosUpdateData, requestingUserId);
         ApiResponse<Kos> response = ApiResponse.<Kos>builder()
@@ -132,7 +135,7 @@ public class KosController {
 
     // --- DELETE ---
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('PEMILIK')")
+    @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<Void> deleteKos(@PathVariable("id") UUID kosId, Authentication authentication) {
         UUID requestingUserId = getUserIdFromAuthentication(authentication);
         kosService.deleteKos(kosId, requestingUserId);

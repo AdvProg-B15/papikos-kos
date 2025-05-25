@@ -30,7 +30,7 @@ public class KosServiceImpl implements KosService {
 
     @Override
     @Transactional
-    public Kos createKos(Kos kos, UUID ownerUserId) {
+    public Kos createKos(Kos kos, UUID ownerUserId) throws IllegalArgumentException {
         validateKosInput(kos, true);
         kos.setOwnerUserId(ownerUserId);
         logger.info("Creating Kos with name '{}' for ownerId {}", kos.getName(), ownerUserId);
@@ -58,7 +58,7 @@ public class KosServiceImpl implements KosService {
 
     @Override
     @Transactional
-    public Kos updateKos(UUID kosId, Kos updatedKosData, UUID requestingUserId) {
+    public Kos updateKos(UUID kosId, Kos updatedKosData, UUID requestingUserId) throws IllegalArgumentException {
         Kos existingKos = findKosById(kosId);
 
         if (!existingKos.getOwnerUserId().equals(requestingUserId)) {

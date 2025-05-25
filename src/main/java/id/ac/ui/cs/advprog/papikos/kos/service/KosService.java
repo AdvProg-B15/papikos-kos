@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.papikos.kos.service;
 
 import id.ac.ui.cs.advprog.papikos.kos.model.Kos;
+import org.apache.coyote.BadRequestException;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +20,7 @@ public interface KosService {
      * @return The created Kos object, including its generated ID and timestamps.
      * @throws IllegalArgumentException if the input Kos data is invalid (e.g., null required fields).
      */
-    Kos createKos(Kos kos, UUID ownerUserId);
+    Kos createKos(Kos kos, UUID ownerUserId) throws IllegalArgumentException;
 
     /**
      * Finds all Kos listings.
@@ -58,7 +59,7 @@ public interface KosService {
      * @throws id.ac.ui.cs.advprog.papikos.kos.exception.UnauthorizedAccessException if the requestingUserId does not match the ownerUserId of the Kos.
      * @throws IllegalArgumentException                                              if the updated data is invalid.
      */
-    Kos updateKos(UUID kosId, Kos updatedKosData, UUID requestingUserId);
+    Kos updateKos(UUID kosId, Kos updatedKosData, UUID requestingUserId) throws IllegalArgumentException;
 
     /**
      * Deletes a specific Kos listing.
