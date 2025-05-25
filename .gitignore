@@ -43,6 +43,3 @@ env/
 
 ### QODO ###
 .qodo
-
-# Gradle Wrapper JAR
-gradle/wrapper/gradle-wrapper.jar
