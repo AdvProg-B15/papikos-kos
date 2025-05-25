@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.papikos.kos.exception.KosNotFoundException;
 import id.ac.ui.cs.advprog.papikos.kos.exception.UnauthorizedAccessException;
 import id.ac.ui.cs.advprog.papikos.kos.response.ApiResponse;
 
+import org.apache.coyote.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -128,7 +129,7 @@ class KosControllerTest {
         assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
         ApiResponse<Kos> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.CREATED, apiResponse.getStatus());
+        assertEquals(201, apiResponse.getStatus());
         assertEquals("Kos created successfully", apiResponse.getMessage());
         assertNotNull(apiResponse.getTimestamp());
 
@@ -196,13 +197,13 @@ class KosControllerTest {
         List<Kos> allKosList = Arrays.asList(kos, anotherKos);
         when(kosService.findAllKos()).thenReturn(allKosList);
 
-        ResponseEntity<ApiResponse<List<Kos>>> responseEntity = kosController.getAllOrSearchKos(null);
+        ResponseEntity<ApiResponse<List<Kos>>> responseEntity = kosController.getAllKos();
 
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         ApiResponse<List<Kos>> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.OK, apiResponse.getStatus());
+        assertEquals(200, apiResponse.getStatus());
         assertEquals("Kos list fetched successfully", apiResponse.getMessage());
         List<Kos> responseData = apiResponse.getData();
         assertNotNull(responseData);
@@ -230,16 +231,16 @@ class KosControllerTest {
     void searchKos_WithKeyword_Success_Returns200() {
         String keyword = "Controller Test";
         List<Kos> searchResult = Collections.singletonList(kos);
-        when(kosService.searchKos(eq(keyword))).thenReturn(searchResult);
+        when(kosService.findAllKos()).thenReturn(searchResult);
 
-        ResponseEntity<ApiResponse<List<Kos>>> responseEntity = kosController.getAllOrSearchKos(keyword);
+        ResponseEntity<ApiResponse<List<Kos>>> responseEntity = kosController.getAllKos();
 
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         ApiResponse<List<Kos>> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.OK, apiResponse.getStatus());
-        assertEquals("Kos search results fetched successfully", apiResponse.getMessage());
+        assertEquals(200, apiResponse.getStatus());
+        assertEquals("Kos list fetched successfully", apiResponse.getMessage());
         List<Kos> responseData = apiResponse.getData();
         assertNotNull(responseData);
         assertSame(searchResult, responseData);
@@ -251,7 +252,7 @@ class KosControllerTest {
         assertEquals(kos.getName(), actualKos.getName());
         assertEquals(kos.getOwnerUserId(), actualKos.getOwnerUserId());
 
-        verify(kosService, times(1)).searchKos(eq(keyword));
+        verify(kosService, times(1)).findAllKos();
     }
 
     @Test
@@ -265,7 +266,7 @@ class KosControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         ApiResponse<List<Kos>> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.OK, apiResponse.getStatus());
+        assertEquals(200, apiResponse.getStatus());
         assertEquals("Owner's Kos list fetched successfully", apiResponse.getMessage());
         List<Kos> responseData = apiResponse.getData();
         assertNotNull(responseData);
@@ -306,7 +307,7 @@ class KosControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         ApiResponse<Kos> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.OK, apiResponse.getStatus());
+        assertEquals(200, apiResponse.getStatus());
         assertEquals("Kos details fetched successfully", apiResponse.getMessage());
         Kos responseData = apiResponse.getData();
         assertNotNull(responseData);
@@ -334,7 +335,7 @@ class KosControllerTest {
     }
 
     @Test
-    void updateKos_Owner_Success_Returns200() {
+    void updateKos_Owner_Success_Returns200() throws BadRequestException {
         Kos kosUpdateData = new Kos(); 
         kosUpdateData.setName("Updated Kos Name From Test");
         kosUpdateData.setNumRooms(12);
@@ -361,7 +362,7 @@ class KosControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         ApiResponse<Kos> apiResponse = responseEntity.getBody();
         assertNotNull(apiResponse);
-        assertEquals(HttpStatus.OK, apiResponse.getStatus());
+        assertEquals(200, apiResponse.getStatus());
         assertEquals("Kos updated successfully", apiResponse.getMessage());
 
         Kos responseData = apiResponse.getData();
