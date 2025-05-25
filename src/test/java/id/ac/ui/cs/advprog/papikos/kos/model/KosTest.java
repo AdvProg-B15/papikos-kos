@@ -27,12 +27,13 @@ class KosTest {
         kos1.setAddress("Jl. Test 1");
         kos1.setDescription("Description 1");
         kos1.setNumRooms(10);
+        kos1.setOccupiedRooms(2); // Default value is 0, but we can set it
         kos1.setMonthlyRentPrice(new BigDecimal("1000000"));
         kos1.setIsListed(true);
         kos1.setCreatedAt(now);
         kos1.setUpdatedAt(now);
 
-        kos2 = new Kos(id1, ownerId1, "Kos Test 1", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), true, now, now);
+        kos2 = new Kos(id1, ownerId1, "Kos Test 1", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), 2, true, now, now);
     }
 
     @Test
@@ -52,12 +53,13 @@ class KosTest {
         String address = "Jl. Lengkap";
         String description = "Deskripsi Lengkap";
         Integer numRooms = 5;
+        Integer occupiedRooms = 2; // Default value is 0, but we can set it
         BigDecimal price = new BigDecimal("500000");
         Boolean isListed = false;
         LocalDateTime createdAt = LocalDateTime.now().minusDays(1);
         LocalDateTime updatedAt = LocalDateTime.now();
 
-        Kos kos = new Kos(id, ownerId, name, address, description, numRooms, price, isListed, createdAt, updatedAt);
+        Kos kos = new Kos(id, ownerId, name, address, description, numRooms, price, occupiedRooms, isListed, createdAt, updatedAt);
 
         assertEquals(id, kos.getId());
         assertEquals(ownerId, kos.getOwnerUserId());
@@ -136,23 +138,23 @@ class KosTest {
         assertEquals(kos1.hashCode(), kos2.hashCode());
 
         // Different ID
-        Kos kos3 = new Kos(UUID.randomUUID(), ownerId1, "Kos Test 1", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), true, kos1.getCreatedAt(), kos1.getUpdatedAt());
+        Kos kos3 = new Kos(UUID.randomUUID(), ownerId1, "Kos Test 1", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), 2, true, kos1.getCreatedAt(), kos1.getUpdatedAt());
         assertNotEquals(kos1, kos3);
         assertNotEquals(kos1.hashCode(), kos3.hashCode()); // HashCode might collide, but unlikely for UUIDs
 
         // Different Name
-        Kos kos4 = new Kos(id1, ownerId1, "Kos Test Different Name", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), true, kos1.getCreatedAt(), kos1.getUpdatedAt());
+        Kos kos4 = new Kos(id1, ownerId1, "Kos Test Different Name", "Jl. Test 1", "Description 1", 10, new BigDecimal("1000000"), 2, true, kos1.getCreatedAt(), kos1.getUpdatedAt());
         assertNotEquals(kos1, kos4);
         assertNotEquals(kos1.hashCode(), kos4.hashCode());
 
         // Null object
-        assertNotEquals(kos1, null);
+        assertNotEquals(null, kos1);
 
         // Different class
-        assertNotEquals(kos1, new Object());
+        assertNotEquals(new Object(), kos1);
 
         // Test with all fields different for hashCode coverage
-        Kos kosAllDifferent = new Kos(UUID.randomUUID(), UUID.randomUUID(), "Diff Name", "Diff Address", "Diff Desc", 20, BigDecimal.TEN, false, LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(4));
+        Kos kosAllDifferent = new Kos(UUID.randomUUID(), UUID.randomUUID(), "Diff Name", "Diff Address", "Diff Desc", 20, BigDecimal.TEN, 2, false, LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(4));
         assertNotEquals(kos1.hashCode(), kosAllDifferent.hashCode());
 
     }

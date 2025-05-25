@@ -110,6 +110,18 @@ public class KosServiceImpl implements KosService {
         );
     }
 
+    @Override
+    @Transactional
+    public void updateOccupiedRooms(UUID kosId, int occupiedRooms) {
+        Kos kos = findKosById(kosId);
+        if (occupiedRooms < 0 || kos.getOccupiedRooms() + occupiedRooms > kos.getNumRooms()) {
+            throw new IllegalArgumentException("Occupied rooms must be between 0 and the total number of rooms.");
+        }
+        kos.setOccupiedRooms(kos.getOccupiedRooms() + occupiedRooms);
+        kosRepository.save(kos);
+        logger.info("Updated occupied rooms for Kos ID {} to {}", kosId, occupiedRooms);
+    }
+
     private void validateKosInput(Kos kos, boolean isCreate) {
         if (kos == null) {
             throw new IllegalArgumentException("Kos data cannot be null.");
@@ -135,4 +147,5 @@ public class KosServiceImpl implements KosService {
             }
         }
     }
+
 }

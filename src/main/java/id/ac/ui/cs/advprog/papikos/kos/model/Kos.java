@@ -41,6 +41,9 @@ public class Kos {
     @Column(name = "monthly_rent_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal monthlyRentPrice;
 
+    @Column(name = "occupied_rooms", nullable = false, columnDefinition = "integer default 0")
+    private Integer occupiedRooms = 0;
+
     @Column(name = "is_listed", nullable = false)
     private Boolean isListed = true;
 

@@ -80,4 +80,11 @@ public interface KosService {
      * @return A list of Kos entities matching the keyword. Returns an empty list if no matches are found.
      */
     List<Kos> searchKos(String keyword);
+
+    /**
+     * Updates occupied rooms count for a specific Kos.
+     *
+     * @param kosId The UUID of the Kos to update.
+     */
+    void updateOccupiedRooms(UUID kosId, int occupiedRooms);
 }
